@@ -1,0 +1,91 @@
+{
+  "name": "bacasync",
+  "version": "1.0.0",
+  "description": "Aplicacion de sincronizacion de archivos multiplataforma estilo GoodSync",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "npm run build && electron .",
+    "watch": "tsc -w",
+    "pack": "electron-builder",
+    "pack:win": "electron-builder --win --x64",
+    "pack:mac": "electron-builder --mac",
+    "pack:mac-universal": "electron-builder --mac universal",
+    "pack:mac-x64": "electron-builder --mac x64",
+    "pack:mac-arm64": "electron-builder --mac arm64",
+    "pack:linux": "electron-builder --linux --x64",
+    "pack:all": "electron-builder -mw"
+  },
+  "author": "BacaSync",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/node-cron": "^3.0.11",
+    "electron": "^28.1.0",
+    "electron-builder": "^24.9.1",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "node-cron": "^3.0.3"
+  },
+  "build": {
+    "appId": "com.bacasync.app",
+    "productName": "BacaSync",
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "files": [
+      "dist/**/*",
+      "src/renderer/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "BacaSync"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "category": "public.app-category.utilities",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "contents": [
+        { "x": 130, "y": 220 },
+        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+      ]
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        },
+        {
+          "target": "deb",
+          "arch": ["x64"]
+        }
+      ],
+      "category": "Utility",
+      "synopsis": "Sincronizacion de archivos con soporte NAS"
+    }
+  }
+}

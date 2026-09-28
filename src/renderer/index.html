@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self';" />
+  <title>BacaSync - Sincronizacion de Archivos</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">⇄</div>
+      <div>
+        <div class="title">BacaSync</div>
+        <div class="subtitle">Sincroniza tus carpetas</div>
+      </div>
+    </div>
+    <button id="btn-new" class="btn primary">+ Nueva tarea de sincronizacion</button>
+  </header>
+
+  <main class="main">
+    <section class="panel">
+      <div class="panel-header">
+      <h2>Tareas de sincronizacion</h2>
+      <span id="count-label" class="muted">0 tareas</span>
+      </div>
+      <div id="jobs-list" class="jobs-list"></div>
+      <div id="empty" class="empty hidden">
+        <div class="empty-icon">📁</div>
+        <p>Aun no tienes tareas configuradas.</p>
+        <p class="muted small">Crea tu primera tarea para empezar a sincronizar carpetas.</p>
+      </div>
+    </section>
+
+    <aside class="sidebar">
+      <div id="detail" class="detail empty-detail">
+        <p class="muted centered">Selecciona una tarea para ver el detalle, o crea una nueva.</p>
+      </div>
+    </aside>
+  </main>
+
+  <div id="modal" class="modal-mask hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modal-title">Nueva tarea</h3>
+        <button class="btn-close" id="btn-close-modal">×</button>
+      </div>
+      <form id="job-form" class="form">
+        <label>
+          <span>Nombre de la tarea</span>
+          <input type="text" id="f-name" required maxlength="80" placeholder="Ej: Respaldo Documentos" />
+        </label>
+
+        <label>
+          <span>Tipo de tarea</span>
+          <select id="f-kind">
+            <option value="normal">Sincronizacion estandar</option>
+            <option value="nas-cache">Modo cache NAS (trabaja local + sincroniza con NAS)</option>
+          </select>
+        </label>
+
+        <div id="fields-normal">
+          <label>
+            <span>Carpeta izquierda</span>
+            <div class="path-row">
+              <input type="text" id="f-left" placeholder="C:\Users\..." />
+              <button type="button" class="btn small" data-pick="left">Examinar</button>
+            </div>
+          </label>
+          <label>
+            <span>Carpeta derecha</span>
+            <div class="path-row">
+              <input type="text" id="f-right" placeholder="D:\Respaldo\..." />
+              <button type="button" class="btn small" data-pick="right">Examinar</button>
+            </div>
+          </label>
+        </div>
+
+        <div id="fields-nas" class="hidden">
+          <label>
+            <span>Carpeta del NAS (remota)</span>
+            <div class="path-row">
+              <input type="text" id="f-nas" placeholder="\\NAS\Proyectos o /Volumenes/NAS/Proyectos" />
+              <button type="button" class="btn small" data-pick="nas">Examinar</button>
+            </div>
+          </label>
+          <label>
+            <span>Carpeta local de trabajo (caché)</span>
+            <div class="path-row">
+              <input type="text" id="f-local" placeholder="C:\WorkCache\Proyectos" />
+              <button type="button" class="btn small" id="btn-suggest-local">Sugerir carpeta</button>
+              <button type="button" class="btn small" data-pick="local">Examinar</button>
+            </div>
+          </label>
+          <label class="check" style="margin-top:6px">
+            <input type="checkbox" id="f-flush-exit" checked />
+            <span>Al salir de la aplicacion, subir cambios locales al NAS (Push automatico)</span>
+          </label>
+        </div>
+
+        <div class="row">
+          <label class="grow">
+            <span>Modo de sincronizacion</span>
+            <select id="f-mode">
+              <option value="two-way">Dos vias (espejo bidireccional)</option>
+              <option value="one-way-left-to-right">Una via: izquierda → derecha</option>
+            </select>
+          </label>
+          <label class="grow">
+            <span>Programacion (expresion cron)</span>
+            <select id="f-schedule">
+              <option value="">Solo manual</option>
+              <option value="0 * * * *">Cada hora (minuto 0)</option>
+              <option value="0 */6 * * *">Cada 6 horas</option>
+              <option value="0 2 * * *">Diario a las 2 AM</option>
+              <option value="0 2 * * 0">Semanal (domingo 2 AM)</option>
+              <option value="0 0 1 * *">Mensual (dia 1)</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="row check-row">
+          <label class="check">
+            <input type="checkbox" id="f-delete" />
+            <span>Eliminar archivos en destino que falten en origen (modo una via)</span>
+          </label>
+          <label class="check">
+            <input type="checkbox" id="f-enabled" checked />
+            <span>Habilitar tarea</span>
+          </label>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn" id="btn-cancel">Cancelar</button>
+          <button type="submit" class="btn primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
