@@ -1,4 +1,4 @@
-name: Build BacaSync (Multiplataforma)
+name: Build BacaSync (Windows + macOS)
 
 on:
   push:
@@ -14,39 +14,12 @@ permissions:
   packages: write
 
 jobs:
-  build:
-    name: Build ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            pack_script: npm run pack:win
-            artifact_os: windows
-            upload_name: BacaSync-Windows
-          - os: macos-latest
-            pack_script: npm run pack:mac
-            artifact_os: macos
-            upload_name: BacaSync-macOS
-          - os: ubuntu-latest
-            pack_script: npm run pack:linux
-            artifact_os: linux
-            upload_name: BacaSync-Linux
-
+  build-windows:
+    name: Build Windows (x64)
+    runs-on: windows-latest
     steps:
       - name: Checkout repositorio
         uses: actions/checkout@v4
-
-      - name: Instalar dependencias del sistema (Linux)
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libfuse2 libasound2 libatk1.0-0 libatk-bridge2.0-0 \
-            libc6 libcairo2 libcups2 libdbus-1-3 libexpat1 libfontconfig1 libgbm1 \
-            libgcc1 libglib2.0-0 libgtk-3-0 libnspr4 libpango-1.0-0 libx11-6 \
-            libx11-xcb1 libxcb1 libxcomposite1 libxcursor1 libxdamage1 libxext6 \
-            libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6
 
       - name: Configurar Node.js
         uses: actions/setup-node@v4
@@ -60,57 +33,152 @@ jobs:
       - name: Compilar TypeScript
         run: npm run build
 
-      - name: Empaquetar app (${{ matrix.artifact_os }})
+      - name: Empaquetar Windows x64 (NSIS + Portable)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
           CI: 'true'
-        run: ${{ matrix.pack_script }}
+        run: npm run pack:win
 
       - name: (Debug) Listar carpeta release
         shell: bash
         run: |
           echo "=== Contenido de release/ ==="
-          ls -lah release/ 2>/dev/null || echo "(carpeta release no existe o vacia)"
-          echo "=== Listado recursivo ==="
-          find release -maxdepth 3 -type f 2>/dev/null || true
+          ls -lah release/ 2>/dev/null || echo "(vacia o no existe)"
+          find release -maxdepth 2 -type f 2>/dev/null || true
 
-      - name: Subir artefactos (Actions)
+      - name: Subir artefactos Windows
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.upload_name }}
+          name: BacaSync-Windows-x64
           path: |
             release/*.exe
-            release/*.msi
-            release/*.dmg
-            release/*.pkg
-            release/*.AppImage
-            release/*.deb
-            release/*.rpm
-            release/*.snap
-            release/*.tar.gz
-            release/*.zip
             release/*.blockmap
             release/latest*.yml
             release/latest*.json
           if-no-files-found: warn
           retention-days: 30
 
-      - name: Subir artefactos a Release (solo tags)
+      - name: Subir a Release (solo tags)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: |
             release/*.exe
-            release/*.msi
+            release/*.blockmap
+            release/latest*.yml
+            release/latest*.json
+          fail_on_unmatched_files: false
+          generate_release_notes: true
+
+  build-mac-x64:
+    name: Build macOS Intel (x64)
+    runs-on: macos-13
+    steps:
+      - name: Checkout repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Instalar dependencias npm
+        run: npm install
+
+      - name: Compilar TypeScript
+        run: npm run build
+
+      - name: Empaquetar macOS x64 (Intel)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          CI: 'true'
+        run: npm run pack:mac-x64
+
+      - name: (Debug) Listar carpeta release
+        shell: bash
+        run: |
+          echo "=== Contenido de release/ ==="
+          ls -lah release/ 2>/dev/null || echo "(vacia o no existe)"
+          find release -maxdepth 2 -type f 2>/dev/null || true
+
+      - name: Subir artefactos macOS Intel
+        uses: actions/upload-artifact@v4
+        with:
+          name: BacaSync-macOS-x64-Intel
+          path: |
             release/*.dmg
-            release/*.pkg
-            release/*.AppImage
-            release/*.deb
-            release/*.rpm
-            release/*.snap
-            release/*.tar.gz
-            release/*.zip
+            release/*.blockmap
+            release/latest*.yml
+            release/latest*.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Subir a Release (solo tags)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/*.dmg
+            release/*.blockmap
+            release/latest*.yml
+            release/latest*.json
+          fail_on_unmatched_files: false
+          generate_release_notes: true
+
+  build-mac-arm64:
+    name: Build macOS Apple Silicon (arm64 M1/M2/M3/M4)
+    runs-on: macos-14
+    steps:
+      - name: Checkout repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Instalar dependencias npm
+        run: npm install
+
+      - name: Compilar TypeScript
+        run: npm run build
+
+      - name: Empaquetar macOS arm64 (Apple Silicon - SIN Rosetta)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          CI: 'true'
+        run: npm run pack:mac-arm64
+
+      - name: (Debug) Listar carpeta release
+        shell: bash
+        run: |
+          echo "=== Contenido de release/ ==="
+          ls -lah release/ 2>/dev/null || echo "(vacia o no existe)"
+          find release -maxdepth 2 -type f 2>/dev/null || true
+
+      - name: Subir artefactos macOS Apple Silicon
+        uses: actions/upload-artifact@v4
+        with:
+          name: BacaSync-macOS-arm64-AppleSilicon
+          path: |
+            release/*.dmg
+            release/*.blockmap
+            release/latest*.yml
+            release/latest*.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Subir a Release (solo tags)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/*.dmg
             release/*.blockmap
             release/latest*.yml
             release/latest*.json
