@@ -57,15 +57,29 @@ jobs:
           echo "=== Buscando instalables EXACTO ==="
           find release -maxdepth 3 -type f \( -iname "*.exe" -o -iname "*.dmg" -o -iname "*.blockmap" -o -iname "latest*.yml" -o -iname "latest*.json" \) 2>/dev/null || true
 
+      - name: Preparar artifacts (copiar todos los instalables a carpeta plana artifacts/)
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          echo "=== Copiando archivos a artifacts/ ==="
+          find release -maxdepth 3 -type f \( -iname "*.exe" -o -iname "*.dmg" -o -iname "*.blockmap" -o -iname "latest*.yml" -o -iname "latest*.json" \) -print0 | while IFS= read -r -d '' f; do
+            base="$(basename "$f")"
+            dest="artifacts/$base"
+            if [ -f "$dest" ]; then
+              echo "(ya existe, skip) $dest"
+            else
+              echo "cp $f -> $dest"
+              cp -f "$f" "$dest"
+            fi
+          done
+          echo "=== Contenido final artifacts/ ==="
+          ls -lah artifacts/ 2>/dev/null || echo "(vacia)"
+
       - name: Subir artefactos Windows
         uses: actions/upload-artifact@v4
         with:
           name: BacaSync-Windows-x64
-          path: |
-            release/**/*.exe
-            release/**/*.blockmap
-            release/**/latest*.yml
-            release/**/latest*.json
+          path: artifacts/*
           if-no-files-found: warn
           retention-days: 30
 
@@ -74,10 +88,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            release/**/*.exe
-            release/**/*.blockmap
-            release/**/latest*.yml
-            release/**/latest*.json
+            artifacts/*.exe
+            artifacts/*.blockmap
+            artifacts/*.yml
+            artifacts/*.json
           fail_on_unmatched_files: false
           generate_release_notes: true
 
@@ -125,15 +139,29 @@ jobs:
           echo "=== Buscando instalables EXACTO ==="
           find release -maxdepth 3 -type f \( -iname "*.exe" -o -iname "*.dmg" -o -iname "*.blockmap" -o -iname "latest*.yml" -o -iname "latest*.json" \) 2>/dev/null || true
 
+      - name: Preparar artifacts (copiar todos los instalables a carpeta plana artifacts/)
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          echo "=== Copiando archivos a artifacts/ ==="
+          find release -maxdepth 3 -type f \( -iname "*.exe" -o -iname "*.dmg" -o -iname "*.blockmap" -o -iname "latest*.yml" -o -iname "latest*.json" \) -print0 | while IFS= read -r -d '' f; do
+            base="$(basename "$f")"
+            dest="artifacts/$base"
+            if [ -f "$dest" ]; then
+              echo "(ya existe, skip) $dest"
+            else
+              echo "cp $f -> $dest"
+              cp -f "$f" "$dest"
+            fi
+          done
+          echo "=== Contenido final artifacts/ ==="
+          ls -lah artifacts/ 2>/dev/null || echo "(vacia)"
+
       - name: Subir artefactos macOS Apple Silicon
         uses: actions/upload-artifact@v4
         with:
           name: BacaSync-macOS-arm64-AppleSilicon
-          path: |
-            release/**/*.dmg
-            release/**/*.blockmap
-            release/**/latest*.yml
-            release/**/latest*.json
+          path: artifacts/*
           if-no-files-found: warn
           retention-days: 30
 
@@ -142,9 +170,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            release/**/*.dmg
-            release/**/*.blockmap
-            release/**/latest*.yml
-            release/**/latest*.json
+            artifacts/*.dmg
+            artifacts/*.blockmap
+            artifacts/*.yml
+            artifacts/*.json
           fail_on_unmatched_files: false
           generate_release_notes: true
