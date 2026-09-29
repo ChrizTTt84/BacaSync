@@ -362,7 +362,8 @@ async function applyAutoStart(settings: AppSettings) {
       console.log('[BacaSync Main] Auto-Start settings:', JSON.stringify(status));
     } catch { /* macOS older versions may throw on getLoginItemSettings */ }
   } catch (e) {
-    console.warn('[BacaSync Main] applyAutoStart no disponible (plataforma/OS viejo?):', e && e.message || e);
+    const msg = (e && typeof e === 'object' && 'message' in e) ? String((e as any).message) : String(e);
+    console.warn('[BacaSync Main] applyAutoStart no disponible (plataforma/OS viejo?):', msg);
   }
 }
 
@@ -391,22 +392,12 @@ app.whenReady().then(async () => {
 
   if (process.platform === 'darwin') {
     app.on('activate', () => {
-      // macOS standard: si no hay ventanas y se pulsa Dock icon -> crear 1 nueva
       if (BrowserWindow.getAllWindows().length === 0) {
         createWindow();
       } else {
         showMain();
       }
     });
-
-    // En macOS Sonoma (14+) a veces hay login-item-events: registralos para logs.
-    try {
-      app.on('login-item-event', (evt, opts) => {
-        console.log('[BacaSync Main] macOS login-item-event:', evt, JSON.stringify(opts || {}));
-      });
-    } catch {
-      /* Electron 28 no tiene login-item-event en versiones menores; skip. */
-    }
   }
 });
 
