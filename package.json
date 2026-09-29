@@ -4,7 +4,7 @@
   "description": "Aplicacion de sincronizacion de archivos multiplataforma estilo GoodSync",
   "main": "dist/main.js",
   "scripts": {
-    "build": "tsc && node -e \"const fs=require('fs');const p=require('path');const d=p.join('dist','renderer');if(!fs.existsSync(d))fs.mkdirSync(d,{recursive:true});['index.html','styles.css'].forEach(f=>{const s=p.join('src','renderer',f);if(fs.existsSync(s))fs.copyFileSync(s,p.join(d,f));});\"",
+    "build": "tsc && node -e \"const fs=require('fs');const p=require('path');const d=p.join('dist','renderer');if(!fs.existsSync(d))fs.mkdirSync(d,{recursive:true});const source=p.join('src','renderer');const files=['index.html','styles.css'];for(const f of files){const s=p.join(source,f);if(!fs.existsSync(s)){console.warn('SKIP falta origen:',s);continue;}const t=p.join(d,f);try{fs.copyFileSync(s,t);const sz=fs.statSync(t).size;console.log('[build renderer OK]',t,sz,'bytes');}catch(e){console.error('ERROR copiando',f,e&&e.message||e);process.exit(1);}}const extraFiles=['app.js'];for(const f of extraFiles){const s=p.join(d,f);if(fs.existsSync(s)){console.log('[build renderer TS OK]',s,fs.statSync(s).size,'bytes');}else{console.warn('FALTA (todavia no compilado?)',s);}}console.log('[build] renderer listo:');fs.readdirSync(d).forEach(f=>{const s=p.join(d,f);const st=fs.statSync(s);console.log('  -',f,st.size,'bytes');});\"",
     "start": "npm run build && electron .",
     "watch": "tsc -w",
     "build:icons": "node -e \"const fs=require('fs');const p=require('path');const run = (f) => { const j = p.join('assets', f); if (fs.existsSync(j)) { try { require('child_process').execFileSync('node', [j], { stdio: 'inherit' }); return true; } catch (e) { console.error('Failed', j, e && e.message || e); process.exitCode = 1; return false; } } return false; }; const runBoth = (base) => run(base+'.js') || run(base+'.cjs'); const a = runBoth('generate-icons'); const b = runBoth('build-icons'); if (!a || !b) process.exit(process.exitCode || 1);\"",
@@ -40,6 +40,7 @@
     "icon": "assets/icon",
     "files": [
       "dist/**/*",
+      "dist/renderer/**/*",
       "package.json"
     ],
     "extraResources": [
@@ -88,9 +89,17 @@
       "minimumSystemVersion": "11.0.0"
     },
     "dmg": {
+      "title": "BacaSync ${version} - macOS Apple Silicon",
+      "backgroundColor": "#1e1b4b",
+      "icon": "assets/icon.icns",
+      "iconSize": 128,
+      "window": {
+        "width": 620,
+        "height": 440
+      },
       "contents": [
-        { "x": 130, "y": 220 },
-        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+        { "x": 150, "y": 170, "type": "file", "path": "BacaSync.app" },
+        { "x": 460, "y": 170, "type": "link", "path": "/Applications" }
       ]
     }
   }
