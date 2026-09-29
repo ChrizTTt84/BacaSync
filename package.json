@@ -7,16 +7,16 @@
     "build": "tsc && node -e \"const fs=require('fs');const p=require('path');const d=p.join('dist','renderer');if(!fs.existsSync(d))fs.mkdirSync(d,{recursive:true});['index.html','styles.css'].forEach(f=>{const s=p.join('src','renderer',f);if(fs.existsSync(s))fs.copyFileSync(s,p.join(d,f));});\"",
     "start": "npm run build && electron .",
     "watch": "tsc -w",
-    "build:icons": "node assets/generate-icons.cjs && node assets/build-icons.cjs",
-    "prepack": "npm run build && npm run build:icons",
-    "prepack:win": "npm run build && npm run build:icons",
-    "prepack:mac-x64": "npm run build && npm run build:icons",
-    "prepack:mac-arm64": "npm run build && npm run build:icons",
-    "prepack:all": "npm run build && npm run build:icons",
+    "build:icons": "node -e \"const fs=require('fs');const p=require('path');const run = (f) => { const j = p.join('assets', f); if (fs.existsSync(j)) { try { require('child_process').execFileSync('node', [j], { stdio: 'inherit' }); return true; } catch (e) { console.error('Failed', j, e && e.message || e); process.exitCode = 1; return false; } } return false; }; const runBoth = (base) => run(base+'.js') || run(base+'.cjs'); const a = runBoth('generate-icons'); const b = runBoth('build-icons'); if (!a || !b) process.exit(process.exitCode || 1);\"",
+    "prepack": "npm run build && (npm run build:icons || true)",
+    "prepack:win": "npm run build && (npm run build:icons || true)",
+    "prepack:mac-x64": "npm run build && (npm run build:icons || true)",
+    "prepack:mac-arm64": "npm run build && (npm run build:icons || true)",
+    "prepack:all": "npm run build && (npm run build:icons || true)",
     "pack": "electron-builder",
     "pack:win": "electron-builder --win --x64",
-    "pack:mac-x64": "electron-builder --mac x64",
-    "pack:mac-arm64": "electron-builder --mac arm64",
+    "pack:mac-x64": "electron-builder --mac --x64",
+    "pack:mac-arm64": "electron-builder --mac --arm64",
     "pack:all": "electron-builder -mw"
   },
   "author": "BacaSync",
@@ -46,7 +46,12 @@
       {
         "from": "assets",
         "to": "icons",
-        "filter": ["*.png", "*.ico", "*.icns", "*.cjs"]
+        "filter": ["*.png", "*.ico", "*.icns", "*.cjs", "*.js"]
+      },
+      {
+        "from": "./",
+        "to": "docs",
+        "filter": ["LEEME.txt", "README.md"]
       }
     ],
     "win": {
@@ -74,8 +79,7 @@
       "icon": "assets/icon.icns",
       "target": [
         {
-          "target": "dmg",
-          "arch": ["x64", "arm64"]
+          "target": "dmg"
         }
       ],
       "category": "public.app-category.utilities",
