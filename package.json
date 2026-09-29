@@ -4,9 +4,15 @@
   "description": "Aplicacion de sincronizacion de archivos multiplataforma estilo GoodSync",
   "main": "dist/main.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node -e \"const fs=require('fs');const p=require('path');const d=p.join('dist','renderer');if(!fs.existsSync(d))fs.mkdirSync(d,{recursive:true});['index.html','styles.css'].forEach(f=>{const s=p.join('src','renderer',f);if(fs.existsSync(s))fs.copyFileSync(s,p.join(d,f));});\"",
     "start": "npm run build && electron .",
     "watch": "tsc -w",
+    "build:icons": "node assets/generate-icons.cjs && node assets/build-icons.cjs",
+    "prepack": "npm run build && npm run build:icons",
+    "prepack:win": "npm run build && npm run build:icons",
+    "prepack:mac-x64": "npm run build && npm run build:icons",
+    "prepack:mac-arm64": "npm run build && npm run build:icons",
+    "prepack:all": "npm run build && npm run build:icons",
     "pack": "electron-builder",
     "pack:win": "electron-builder --win --x64",
     "pack:mac-x64": "electron-builder --mac x64",
@@ -20,6 +26,8 @@
     "@types/node-cron": "^3.0.11",
     "electron": "^28.1.0",
     "electron-builder": "^24.9.1",
+    "png-to-ico": "^3.0.2",
+    "png2icons": "^2.0.1",
     "typescript": "^5.3.3"
   },
   "dependencies": {
@@ -29,11 +37,20 @@
     "appId": "com.bacasync.app",
     "productName": "BacaSync",
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "icon": "assets/icon",
     "files": [
       "dist/**/*",
-      "src/renderer/**/*"
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "assets",
+        "to": "icons",
+        "filter": ["*.png", "*.ico", "*.icns", "*.cjs"]
+      }
     ],
     "win": {
+      "icon": "assets/icon.ico",
       "target": [
         {
           "target": "nsis",
@@ -54,6 +71,7 @@
       "shortcutName": "BacaSync"
     },
     "mac": {
+      "icon": "assets/icon.icns",
       "target": [
         {
           "target": "dmg",
