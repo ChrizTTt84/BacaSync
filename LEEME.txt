@@ -1,0 +1,352 @@
+================================================================================
+  BacaSync - Sincronizacion de Carpetas (Windows + macOS Intel + Apple Silicon)
+================================================================================
+
+Version 1.0.0
+https://github.com/ChrizTTt84/BacaSync
+
+================================================================================
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!                   GARANTIA ANTI-PERDIDA DE DATOS NAS                  !!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  ESTA ES LA REGLA MAS IMPORTANTE DE BacaSync, POR DISEÑO INVIOLABLE:
+
+  🛡️  EL PUSH (SUBIR ARCHIVOS) DESDE TU DISCO LOCAL HACIA EL NAS
+     NUNCA, JAMAS, EN NINGUN CASO, SE FILTRA.
+
+  Si tu modificas / creas UN SOLO ARCHIVO en tu DISCO LOCAL SSD (la
+  "Cache local"), aunque ese archivo NO ESTE MARCADO en el arbol de
+  "Cache selectiva" de la tarea Modo NAS, ESE ARCHIVO SE SUBIRA SIEMPRE
+  al NAS cuando ejecutes "Sincronizar ahora" / "Push" / cierres la app
+  (se hace flushOnExit al salir). NO HAY MANERA de desactivar esto.
+  NUNCA perderas tu trabajo local por una mala seleccion en el arbol.
+
+  ⚠️  SOLO se filtra el PULL (DESCARGAR DESDE EL NAS HACIA LOCAL):
+     Marcar "cache selectiva" significa: "NO me descargues TODO el NAS,
+     solo lo que yo marque aqui". Tu trabajo local nunca se toca ni se
+     borra en este filtro.
+
+  Orden de ejecucion DE CADA SINCRONIZACION:
+    1) Primero SE CREAN LAS CARPETAS (mkdir)
+    2) Despues SE COPIAN LOS ARCHIVOS NUEVOS / MODIFICADOS
+    3) AL FINAL, Y SOLO EN MODO ESPEJO: se borra lo que ya no exista
+       en el LADO ORIGEN. Nunca se borra primero. Nunca se pierde nada
+       si la operacion se interrumpe a mitad.
+
+================================================================================
+  ¿QUE ES BacaSync?
+================================================================================
+
+BacaSync es una aplicacion de escritorio multiplataforma (Windows x64,
+macOS Intel x64 y macOS Apple Silicon arm64 M1/M2/M3/M4 - SIN necesidad
+de Rosetta 2) estilo GoodSync.
+
+Originalmente creada para este ESCENARIO:
+  - Tienes tu trabajo guardado en carpetas de un NAS (red local).
+  - NO quieres editar los archivos pesados DIRECTAMENTE en el NAS, porque
+    va lento / a veces se corta la conexion / el NAS duerme.
+  - Quieres tener una COPIA / CACHE LOCAL en tu SSD rapido, editar ahi
+    los archivos, y cuando guardes, sincronizar SOLO lo modificado (no
+    volver a copiar la carpeta entera cada vez).
+
+Ademas de este "Modo NAS cache", BacaSync soporta tambien sincronizacion
+estandar entre DOS carpetas locales o de red, como cualquier sync normal.
+
+================================================================================
+  INSTALACION
+================================================================================
+
+WINDOWS x64 (Windows 10/11):
+  1. Descarga BacaSync-Windows-x64.zip desde GitHub Actions / Releases.
+  2. Descomprime el ZIP.
+  3. Ejecuta "BacaSync Setup 1.0.0.exe" y sigue el asistente (siguiente,
+     siguiente, instalar, terminar).
+  4. Si Windows SmartScreen te sale en rojo "Microsoft Defender impidio
+     una aplicacion no reconocida", pulsa en "Informacion adicional" y
+     luego "Ejecutar de todos modos" (el instalador no tiene firma EV
+     de momento).
+  5. Al iniciar la app veras la ventana principal y el icono BacaSync
+     (flechas ↔️ azul/morado) en el area de notificacion (bandeja, al
+     lado del reloj).
+
+MACOS APPLE SILICON (M1 / M2 / M3 / M4):
+  1. Descarga BacaSync-macOS-arm64-AppleSilicon.zip.
+  2. Abre el ZIP. Se montara el DMG o descomprimira el archivo.
+  3. Arrastra el icono BacaSync.app a la carpeta Aplicaciones.
+  4. Para ABRIRLO LA PRIMERA VEZ:
+       - NO abras la app haciendo doble clic (macOS te pondra un aviso
+         de "desarrollador no identificado").
+       - Abre Aplicaciones, haz CLICK DERECHO sobre BacaSync → Abrir.
+       - Ahora te saldra un aviso con un boton "Abrir". Pulsalo.
+     Alternativa: Preferencias del sistema → Privacidad y Seguridad →
+     baja hasta abajo, veras un mensaje "BacaSync fue bloqueado" →
+     "Permitir de todos modos".
+  5. La app aparecera en el Dock y tendras el icono BacaSync en la
+     barra de menú superior de macOS.
+
+MACOS INTEL x64 (Mac antiguos con procesador Intel):
+  1. Descarga BacaSync-macOS-x64-Intel.zip y sigue el mismo proceso
+     que Apple Silicon. Usa este si tu Mac no tiene el chip M.
+
+================================================================================
+  PRIMER ARRANQUE - AJUSTES GENERALES
+================================================================================
+
+Pulsa el boton "⚙️ Ajustes" arriba a la derecha de la ventana principal.
+Veras 3 opciones:
+
+  ☑️ Iniciar automaticamente al encender el equipo
+       - Recomendado MARCADO. Usa la API oficial de Electron
+         (app.setLoginItemSettings) - NO toca el registro ni plists.
+         Se configura solo tanto en Windows como en macOS. Se abre en
+         modo oculto (sin ventana), solo icono en bandeja.
+
+  ☐ Arrancar minimizado a la bandeja
+       - Si lo marcas, incluso cuando abres la app manualmente, la
+         ventana principal NO aparece, queda en segundo plano en la
+         bandeja. Doble clic en el icono bandeja para abrirla.
+
+  ☑️ Mantener la app en bandeja al cerrar la ventana (SIEMPRE ACTIVO)
+       - ESTA OPCION ESTA SIEMPRE MARCADA y NO se puede desmarcar,
+         por diseño. Si cierras la ventana principal (X), la APP NO SE
+         CIERRA, pasa a segundo plano en la bandeja y SIGUE SINCRONI-
+         ZANDO las tareas programadas en horario.
+         ¿Como salir de verdad? Menu bandeja → "Salir", o en macOS
+         BacaSync → Salir (Cmd+Q).
+
+Importante: Antes de Salir, la app ejecuta AUTOMATICAMENTE un PUSH de
+todas las tareas tipo "Modo NAS cache", para subir lo ultimo que
+modificaste en local al NAS y no perder nada. Es el "flushOnExit"
+garantizado.
+
+================================================================================
+  CREAR TU PRIMERA TAREA: Modo CACHE NAS (el modo principal)
+================================================================================
+
+Este es el modo para el que se creo la app. Caso de uso:
+  NAS = \\192.168.1.10\Proyectos\ClienteA  (red local, lento)
+  SSD = C:\BacaSyncCache\ClienteA          (tu SSD local, rapido)
+  Quieres editar archivos en C: y que se sincronicen al NAS SOLO lo
+  cambiado, sin tener que volver a copiar 10GB de carpeta.
+
+Pasos:
+
+1. Pulsa el boton AZUL "+ Nueva tarea de sincronizacion" arriba derecha.
+2. EN EL PRIMER DESPLEGABLE, selecciona:  "Modo cache NAS"
+3. Nombre de la tarea: lo que quieras, ej: "ClienteA (Cache SSD)"
+4. CARPETA NAS (☁️):
+     - Pulsa "Elegir" y selecciona la carpeta del NAS en red.
+     - EN WINDOWS: Si al seleccionar te pide credenciales, primero abre
+       la ruta en el Explorador de Windows (\\192.168.1.10\Proyectos)
+       y guarda las credenciales en el Panel de control → Administrador
+       de credenciales → Credenciales de Windows → Agregar credencial
+       generica con Direccion: \\192.168.1.10 , Usuario NAS, Password.
+     - IMPORTANTE: Comprueba MANUALMENTE antes que puedes CREAR UNA
+       CARPETA VACIA dentro de la ruta NAS a mano (con el explorador).
+       Si no puedes crearla a mano, BacaSync tampoco podrá (error
+       EPERM) - se trata de permisos SMB del NAS, no de la app.
+5. CARPETA LOCAL SSD (💻):
+     - Pulsa "Sugerir carpeta" → te crea una ruta con el nombre de la
+       tarea dentro de tu carpeta personal, recomendada.
+     - O usa "Elegir" y selecciona una carpeta VACIA nueva en tu SSD.
+6. Modo de sincronizacion:
+     - Espejo (izquierda → derecha, 100% igual al NAS): Recomendado si
+       quieres que tu SSD sea una copia exacta. Si borras un archivo en
+       el NAS y haces Pull, tambien se borra en local.
+     - Una via Pull (solo descarga de NAS a SSD): solo trae cambios,
+       nunca borra nada en local aunque el NAS lo borre.
+     - Una via Push (solo sube de SSD a NAS): solo sube tus cambios
+       locales, nunca trae nada nuevo del NAS.
+     - Bidireccional: combina ambos (conflicto: gana el mas reciente).
+7. Programacion:
+     - Manual: solo se ejecuta cuando pulsas "Sincronizar ahora".
+     - Cada hora, cada 6 horas, diario, semanal, mensual: la tarea se
+       ejecuta automaticamente en el horario, aunque la ventana este
+       cerrada (la app sigue en bandeja). La proxima ejecucion se ve
+       en un badge gris en la tarjeta.
+8. Pulsa "Guardar tarea".
+
+================================================================================
+  CACHE SELECTIVA (ahorra espacio en tu SSD)
+================================================================================
+
+Una vez creada la tarea Modo cache NAS, en el panel DETALLE de la tarea
+veras un boton GRANDE llamado: "🗂️ Configurar cache selectiva".
+
+Esto es: NO quieres descargarte TODO el contenido del NAS (100GB), solo
+las carpetas y archivos en los que vas a trabajar esta semana.
+
+1. Pulsa "Configurar cache selectiva".
+2. Veras un arbol (tri-state checkboxes) de TODO lo que hay en el NAS.
+3. Marca / desmarca carpetas:
+     - Marcar una carpeta padre: marca TODO su contenido recursivamente.
+     - Desmarcar una carpeta padre: desmarca TODO.
+     - Marcar solo algunos hijos: el padre se queda en estado
+       "indeterminado" (rayita azul).
+4. Toolbar arriba del arbol:
+     - [ ] Incluir TODO el NAS: marcar / desmarcar todo de un golpe.
+     - [+] Expandir todo | [-] Colapsar todo | [∅] Ninguno.
+5. Pulsa "Guardar seleccion".
+   ⚠️  REGLA INVIOLABLE Nº 2:
+   Esta seleccion SOLO AFECTA AL PULL (Traer del NAS hacia local).
+   SIEMPRE, incluso con cache selectiva, LO QUE TU MODIFIQUES EN EL
+   SSD LOCAL SE SUBIRA COMPLETO AL NAS (Push), aunque no este marcado
+   en el arbol. NUNCA PIERDES NADA.
+
+================================================================================
+  LOS 4 BOTONES DEL DETALLE DE LA TAREA
+================================================================================
+
+Dentro del panel de Detalle (seleccionas la tarea en la lista izquierda):
+
+  1) ▶️ SINCRONIZAR AHORA
+       - Ejecuta el modo completo que elegiste (espejo, una via, etc.)
+
+  2) 📋 VISTA PREVIA
+       - NO TOCA NINGUN ARCHIVO. Solo te MUESTRA que acciones se
+         harian (que archivos se copiaran, que carpetas se crearan,
+         que se borraria). Usalo SIEMPRE la primera vez para estar
+         100% seguro.
+
+  3) ⬇️ TRAER DEL NAS (PULL, solo en modo NAS)
+       - Copia lo que esta en el NAS hacia tu SSD. Solo afecta el lado
+         LOCAL. Si tienes cache selectiva, solo traera lo marcado.
+
+  4) ⬆️ SUBIR AL NAS (PUSH, solo en modo NAS)
+       - Copia lo que modificaste en SSD hacia el NAS. NUNCA SE FILTRA,
+         siempre sube TODO lo que hayas cambiado en local. Garantia
+         anti-perdida.
+
+Ademas tienes:
+  - Editar: cambia nombre, rutas, programacion.
+  - Eliminar: borra la tarea (no toca los archivos de los discos).
+
+================================================================================
+  ICONO DE BANDEJA (Tray)
+================================================================================
+
+WINDOWS:
+  Icono al lado del reloj (si no lo ves, pulsa la flechita ^ para
+  mostrar iconos ocultos, y arrastra el icono BacaSync hacia la barra
+  para dejarlo siempre visible).
+  - Click izquierdo o doble clic: abre la ventana principal.
+  - Click derecho: menu → "Abrir BacaSync" / "Salir".
+
+MACOS:
+  Icono en la BARRA DE MENU (arriba del todo, a la derecha, junto a
+  WiFi / Bateria).
+  - Clic en el icono: menu.
+  - Cmd+Q desde la app para salir.
+
+================================================================================
+  SOLUCION DE PROBLEMAS FRECUENTES (FAQ)
+================================================================================
+
+1) ❌ ERROR al sincronizar: "EPERM: operation not permitted, copyfile / mkdir ..."
+   Localizacion: el path de destino empieza por \\NAS\... o smb://NAS/...
+   SOLUCION: Es un error DE PERMISOS DEL NAS, no de la aplicacion.
+     - Abre el Explorador / Finder, navega a esa carpeta, intenta
+       crear a mano una carpeta vacia.
+     - Si NO PUEDES: entra al panel web de tu NAS, ajusta permisos
+       SMB / Recurso compartido → Lectura + Escritura (Read/Write)
+       a tu usuario.
+     - En Windows: Panel de control → Administrador de credenciales →
+       Credenciales de Windows → Agregar credencial generica:
+       Direccion: \\IP_DE_TU_NAS, Usuario: tu_user_nas, Password: pass.
+       Guarda. Cierra y abre explorador. Ahora ya puede escribir.
+
+2) ❌ ERROR al guardar tarea / ajustes: "EPERM open ...\bacasync-jobs.json"
+   SOLUCION: Windows Defender / antivirus estaba escaneando el JSON en
+   el momento de guardar. La app ya tiene REINTENTOS automaticos con
+   espera creciente y escritura atomica (tmp + rename), asi que
+   normalmente un 2do intento va bien. Si es la 1ª vez: cierra la app,
+   vuelve a abrir, guarda de nuevo.
+
+3) ❌ La tarea programada no se ejecuta cuando cierro la ventana.
+   SOLUCION: La ventana cerrada NO significa app cerrada (ver ajustes).
+   Si la tarea no se ejecuta:
+     - Asegurate de NO haber pulsado "Salir" desde el menu bandeja.
+     - Abre Ajustes y comprueba que la programacion de la tarea NO
+       este en Manual.
+     - La app tiene que estar corriendo (icono en bandeja visible).
+
+4) ❌ macOS: "BacaSync no se puede abrir porque el desarrollador no
+   esta identificado" o "Esta aplicacion danara tu ordenador".
+   SOLUCION: NO hagas doble clic. Boton derecho sobre BacaSync.app →
+   Abrir. Ahora aparecera el boton "Abrir". Acepta.
+   O: Ajustes → Privacidad y seguridad → baja → "Permitir de todos
+   modos".
+
+5) ❌ Solo se copian archivos, NO se copian las carpetas vacias.
+   SOLUCION: Actualizado en version 1.0.0 - las carpetas vacias SI
+   se copian (se crean en el destino, incluso las anidadas). Si la
+   tuya no aparecia: crea una tarea NUEVA (no uses la tarea vieja de
+   versiones anteriores sin los campos nuevos).
+
+6) ❌ Windows SmartScreen impide instalar el Setup.exe.
+   SOLUCION: Pulsa "Informacion adicional" en el dialogo rojo → aparecera
+   el boton "Ejecutar de todos modos". (Los instaladores no tienen firma
+   EV de certificado Microsoft / Apple Developer ID por ahora).
+
+================================================================================
+  ARCHIVOS DE CONFIGURACION - Donde se guarda TODO
+================================================================================
+
+Los ajustes, las tareas, la cache selectiva y la programacion se
+guardan como JSON planos. Puedes copiar / hacer backup de ellos sin
+problema.
+
+WINDOWS:
+  %APPDATA%\BacaSync\
+    - bacasync-jobs.json     (todas tus tareas y seleccion cache)
+    - bacasync-settings.json (ajustes auto-arranque, bandeja)
+
+MACOS:
+  ~/Library/Application Support/BacaSync/
+    - bacasync-jobs.json
+    - bacasync-settings.json
+
+Para migrar de un PC a otro: copia estos 2 JSON a la misma ruta.
+Nada se guarda "en el registro" ni "oculto" ni "en la nube". 100%
+offline, local. Tu privacidad se respeta.
+
+================================================================================
+  COMPILAR / DESARROLLAR (para desarrolladores)
+================================================================================
+
+Requisitos: Node.js 20 o 22 + npm.
+
+  git clone https://github.com/ChrizTTt84/BacaSync.git
+  cd BacaSync
+  npm install
+  npm run build:icons   # genera iconos PNG/ICO/ICNS + fallback base64
+  npm run build         # compila TS + copia HTML/CSS renderer a dist/
+  npm start             # inicia modo desarrollo
+
+Empaquetado local (solo la plataforma donde estas):
+  npm run pack:win        (en Windows)
+  npm run pack:mac-arm64  (en Mac Apple Silicon)
+  npm run pack:mac-x64    (en Mac Intel)
+
+Los builds multiplataforma se hacen SIEMPRE con GitHub Actions,
+usando runners macOS-13 (Intel) / macOS-14 (M) / windows-latest.
+En Actions → Run workflow → Run. Los 3 artefactos se suben.
+
+================================================================================
+  PROXIMAS MEJORAS (opcionales, si se piden):
+================================================================================
+
+  - Liberar espacio local: boton para BORRAR de la cache SSD los
+    archivos SIN BORRARLOS del NAS (liberar espacio sin perder nada).
+  - Log de cambios detallado: archivo TXT / CSV con fecha, accion,
+    peso, duracion.
+  - Notificador de actualizaciones: comprobar Releases en GitHub al
+    arrancar, y avisar si hay una version mas nueva.
+  - Firma de instaladores: Certificado EV Windows + Apple Developer
+    ID para no tener que pasar por "Ejecutar de todos modos" en
+    SmartScreen / Gatekeeper.
+
+================================================================================
+  LICENCIA: Uso privado de ChrizTTt84.
+================================================================================
