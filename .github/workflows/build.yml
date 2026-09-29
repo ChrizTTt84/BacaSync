@@ -51,18 +51,19 @@ jobs:
       - name: (Debug) Listar carpeta release
         shell: bash
         run: |
-          echo "=== Contenido de release/ (maxDepth 3) ==="
-          ls -lah release/ 2>/dev/null || echo "(vacia o no existe)"
-          find release -maxdepth 3 -type f 2>/dev/null || true
-          echo "=== Buscando instalables EXACTO ==="
-          find release -maxdepth 3 -type f \( -iname "*.exe" -o -iname "*.dmg" -o -iname "*.blockmap" -o -iname "latest*.yml" -o -iname "latest*.json" \) 2>/dev/null || true
+          echo "=== Contenido de release/ (si existe, maxDepth 3) ==="
+          if [ -d release ]; then ls -lah release/ || true; find release -maxdepth 3 -type f 2>/dev/null || true; else echo "(release/ NO existe - electron-builder habra puesto los artefactos en otra carpeta)"; fi
+          echo "=== Buscando instalables EXACTO en TODO el repo (maxDepth 4) ==="
+          find . -maxdepth 4 -type f \( -iname "*.exe" -o -iname "*.dmg" -o -iname "*.blockmap" -o -iname "latest*.yml" -o -iname "latest*.json" \) -not -path "./node_modules/*" -not -path "./.git/*" 2>/dev/null || true
 
       - name: Preparar artifacts (copiar todos los instalables a carpeta plana artifacts/)
         shell: bash
         run: |
           mkdir -p artifacts
-          echo "=== Copiando archivos a artifacts/ ==="
-          find release -maxdepth 3 -type f \( -iname "*.exe" -o -iname "*.dmg" -o -iname "*.blockmap" -o -iname "latest*.yml" -o -iname "latest*.json" \) -print0 | while IFS= read -r -d '' f; do
+          echo "=== Contenido directorio root (buscar posibles artefactos) ==="
+          ls -lah || true
+          echo "=== Buscando instalables EXACTO en TODO el repo (maxDepth 4) ==="
+          find . -maxdepth 4 -type f \( -iname "*.exe" -o -iname "*.dmg" -o -iname "*.blockmap" -o -iname "latest*.yml" -o -iname "latest*.json" \) -not -path "./node_modules/*" -not -path "./.git/*" 2>/dev/null | while IFS= read -r f; do
             base="$(basename "$f")"
             dest="artifacts/$base"
             if [ -f "$dest" ]; then
@@ -71,7 +72,7 @@ jobs:
               echo "cp $f -> $dest"
               cp -f "$f" "$dest"
             fi
-          done
+          done || true
           echo "=== Contenido final artifacts/ ==="
           ls -lah artifacts/ 2>/dev/null || echo "(vacia)"
 
@@ -133,18 +134,19 @@ jobs:
       - name: (Debug) Listar carpeta release
         shell: bash
         run: |
-          echo "=== Contenido de release/ (maxDepth 3) ==="
-          ls -lah release/ 2>/dev/null || echo "(vacia o no existe)"
-          find release -maxdepth 3 -type f 2>/dev/null || true
-          echo "=== Buscando instalables EXACTO ==="
-          find release -maxdepth 3 -type f \( -iname "*.exe" -o -iname "*.dmg" -o -iname "*.blockmap" -o -iname "latest*.yml" -o -iname "latest*.json" \) 2>/dev/null || true
+          echo "=== Contenido de release/ (si existe, maxDepth 3) ==="
+          if [ -d release ]; then ls -lah release/ || true; find release -maxdepth 3 -type f 2>/dev/null || true; else echo "(release/ NO existe - electron-builder habra puesto los artefactos en otra carpeta)"; fi
+          echo "=== Buscando instalables EXACTO en TODO el repo (maxDepth 4) ==="
+          find . -maxdepth 4 -type f \( -iname "*.exe" -o -iname "*.dmg" -o -iname "*.blockmap" -o -iname "latest*.yml" -o -iname "latest*.json" \) -not -path "./node_modules/*" -not -path "./.git/*" 2>/dev/null || true
 
       - name: Preparar artifacts (copiar todos los instalables a carpeta plana artifacts/)
         shell: bash
         run: |
           mkdir -p artifacts
-          echo "=== Copiando archivos a artifacts/ ==="
-          find release -maxdepth 3 -type f \( -iname "*.exe" -o -iname "*.dmg" -o -iname "*.blockmap" -o -iname "latest*.yml" -o -iname "latest*.json" \) -print0 | while IFS= read -r -d '' f; do
+          echo "=== Contenido directorio root (buscar posibles artefactos) ==="
+          ls -lah || true
+          echo "=== Buscando instalables EXACTO en TODO el repo (maxDepth 4) ==="
+          find . -maxdepth 4 -type f \( -iname "*.exe" -o -iname "*.dmg" -o -iname "*.blockmap" -o -iname "latest*.yml" -o -iname "latest*.json" \) -not -path "./node_modules/*" -not -path "./.git/*" 2>/dev/null | while IFS= read -r f; do
             base="$(basename "$f")"
             dest="artifacts/$base"
             if [ -f "$dest" ]; then
@@ -153,7 +155,7 @@ jobs:
               echo "cp $f -> $dest"
               cp -f "$f" "$dest"
             fi
-          done
+          done || true
           echo "=== Contenido final artifacts/ ==="
           ls -lah artifacts/ 2>/dev/null || echo "(vacia)"
 
