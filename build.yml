@@ -1,4 +1,4 @@
-name: Build BacaSync (Multiplataforma)
+name: Build BacaSync (Windows + macOS)
 
 on:
   push:
@@ -14,77 +14,167 @@ permissions:
   packages: write
 
 jobs:
-  build:
-    name: Build ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            pack_script: npm run pack:win
-            artifact_os: windows
-            upload_name: BacaSync-Windows
-          - os: macos-latest
-            pack_script: npm run pack:mac
-            artifact_os: macos
-            upload_name: BacaSync-macOS
-          - os: ubuntu-latest
-            pack_script: npm run pack:linux
-            artifact_os: linux
-            upload_name: BacaSync-Linux
-
+  build-windows:
+    name: Build Windows (x64)
+    runs-on: windows-latest
     steps:
       - name: Checkout repositorio
         uses: actions/checkout@v4
 
+      - name: (Debug) Listar assets / repo
+        shell: bash
+        run: |
+          echo "=== Root ==="
+          ls -la || true
+          echo "=== assets/ (si existe) ==="
+          ls -la assets/ 2>/dev/null || echo "(assets/ NO existe - el package.json lo tolera con || true)"
+
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
-      - name: Instalar dependencias
-        run: npm ci
+      - name: Instalar dependencias npm
+        run: npm install
 
       - name: Compilar TypeScript
         run: npm run build
 
-      - name: Empaquetar app (${{ matrix.artifact_os }})
+      - name: Empaquetar Windows x64 (NSIS + Portable)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
           CI: 'true'
-        run: ${{ matrix.pack_script }}
+        run: npm run pack:win
 
-      - name: Subir artefactos (Actions)
+      - name: (Debug) Listar carpeta release
+        shell: bash
+        run: |
+          echo "=== Contenido de release/ (si existe, maxDepth 3) ==="
+          if [ -d release ]; then ls -lah release/ || true; find release -maxdepth 3 -type f 2>/dev/null || true; else echo "(release/ NO existe - electron-builder habra puesto los artefactos en otra carpeta)"; fi
+          echo "=== Buscando instalables EXACTO en TODO el repo (maxDepth 4) ==="
+          find . -maxdepth 4 -type f \( -iname "*.exe" -o -iname "*.dmg" -o -iname "*.blockmap" -o -iname "latest*.yml" -o -iname "latest*.json" \) -not -path "./node_modules/*" -not -path "./.git/*" 2>/dev/null || true
+
+      - name: Preparar artifacts (copiar todos los instalables a carpeta plana artifacts/)
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          echo "=== Contenido directorio root (buscar posibles artefactos) ==="
+          ls -lah || true
+          echo "=== Buscando instalables EXACTO en TODO el repo (maxDepth 4) ==="
+          find . -maxdepth 4 -type f \( -iname "*.exe" -o -iname "*.dmg" -o -iname "*.blockmap" -o -iname "latest*.yml" -o -iname "latest*.json" \) -not -path "./node_modules/*" -not -path "./.git/*" 2>/dev/null | while IFS= read -r f; do
+            base="$(basename "$f")"
+            dest="artifacts/$base"
+            if [ -f "$dest" ]; then
+              echo "(ya existe, skip) $dest"
+            else
+              echo "cp $f -> $dest"
+              cp -f "$f" "$dest"
+            fi
+          done || true
+          echo "=== Contenido final artifacts/ ==="
+          ls -lah artifacts/ 2>/dev/null || echo "(vacia)"
+
+      - name: Subir artefactos Windows
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.upload_name }}
-          path: |
-            release/*Setup*.exe
-            release/*Portable*.exe
-            release/*.dmg
-            release/*.AppImage
-            release/*.deb
-            release/*.blockmap
-            release/latest*.yml
-            release/latest*.json
+          name: BacaSync-Windows-x64
+          path: artifacts/*
           if-no-files-found: warn
           retention-days: 30
 
-      - name: Subir artefactos a Release (solo tags)
+      - name: Subir a Release (solo tags)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            release/*Setup*.exe
-            release/*Portable*.exe
-            release/*.dmg
-            release/*.AppImage
-            release/*.deb
-            release/*.blockmap
-            release/latest*.yml
-            release/latest*.json
+            artifacts/*.exe
+            artifacts/*.blockmap
+            artifacts/*.yml
+            artifacts/*.json
+          fail_on_unmatched_files: false
+          generate_release_notes: true
+
+  
+  build-mac-arm64:
+    name: Build macOS Apple Silicon (arm64 M1/M2/M3/M4)
+    runs-on: macos-14
+    steps:
+      - name: Checkout repositorio
+        uses: actions/checkout@v4
+
+      - name: (Debug) Listar assets / repo
+        shell: bash
+        run: |
+          echo "=== Root ==="
+          ls -la || true
+          echo "=== assets/ (si existe) ==="
+          ls -la assets/ 2>/dev/null || echo "(assets/ NO existe - el package.json lo tolera con || true)"
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Instalar dependencias npm
+        run: npm install
+
+      - name: Compilar TypeScript
+        run: npm run build
+
+      - name: Empaquetar macOS arm64 (Apple Silicon - SIN Rosetta)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          CI: 'true'
+        run: npm run pack:mac-arm64
+
+      - name: (Debug) Listar carpeta release
+        shell: bash
+        run: |
+          echo "=== Contenido de release/ (si existe, maxDepth 3) ==="
+          if [ -d release ]; then ls -lah release/ || true; find release -maxdepth 3 -type f 2>/dev/null || true; else echo "(release/ NO existe - electron-builder habra puesto los artefactos en otra carpeta)"; fi
+          echo "=== Buscando instalables EXACTO en TODO el repo (maxDepth 4) ==="
+          find . -maxdepth 4 -type f \( -iname "*.exe" -o -iname "*.dmg" -o -iname "*.blockmap" -o -iname "latest*.yml" -o -iname "latest*.json" \) -not -path "./node_modules/*" -not -path "./.git/*" 2>/dev/null || true
+
+      - name: Preparar artifacts (copiar todos los instalables a carpeta plana artifacts/)
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          echo "=== Contenido directorio root (buscar posibles artefactos) ==="
+          ls -lah || true
+          echo "=== Buscando instalables EXACTO en TODO el repo (maxDepth 4) ==="
+          find . -maxdepth 4 -type f \( -iname "*.exe" -o -iname "*.dmg" -o -iname "*.blockmap" -o -iname "latest*.yml" -o -iname "latest*.json" \) -not -path "./node_modules/*" -not -path "./.git/*" 2>/dev/null | while IFS= read -r f; do
+            base="$(basename "$f")"
+            dest="artifacts/$base"
+            if [ -f "$dest" ]; then
+              echo "(ya existe, skip) $dest"
+            else
+              echo "cp $f -> $dest"
+              cp -f "$f" "$dest"
+            fi
+          done || true
+          echo "=== Contenido final artifacts/ ==="
+          ls -lah artifacts/ 2>/dev/null || echo "(vacia)"
+
+      - name: Subir artefactos macOS Apple Silicon
+        uses: actions/upload-artifact@v4
+        with:
+          name: BacaSync-macOS-arm64-AppleSilicon
+          path: artifacts/*
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Subir a Release (solo tags)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/*.dmg
+            artifacts/*.blockmap
+            artifacts/*.yml
+            artifacts/*.json
           fail_on_unmatched_files: false
           generate_release_notes: true
